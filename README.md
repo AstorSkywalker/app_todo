@@ -40,6 +40,27 @@ Tambien puedes copiar `.env.example` como base. Los valores de `.env` se cargan 
 
 `ORACLE_DB_PROFILE` puede ser `local` o `cloud`, y tambien puedes cambiar la conexion desde el selector de la interfaz.
 
+## Variables de .env
+
+- `PORT`: puerto HTTP donde arranca la app. Por defecto se usa `3000`.
+- `ORACLE_DB_PROFILE`: perfil activo al iniciar la app. Valores validos: `local` o `cloud`.
+- `ORACLE_USE_THICK`: activa Oracle Thick mode. Usa `true` para trabajar con Oracle ADB mediante wallet/TNS. Usa `false` si quieres intentar Thin mode.
+- `ORACLE_LOCAL_USER`: usuario Oracle del perfil local.
+- `ORACLE_LOCAL_PASSWORD`: password del usuario Oracle local.
+- `ORACLE_LOCAL_CONNECT_STRING`: cadena de conexion del perfil local, por ejemplo `//localhost:1521/freepdb1`.
+- `ORACLE_CLIENT_LIB_DIR`: ruta de Oracle Client o Instant Client. Se usa cuando `ORACLE_USE_THICK=true`.
+- `ORACLE_CLIENT_CONFIG_DIR`: ruta donde viven `tnsnames.ora` y `sqlnet.ora`. Se usa cuando `ORACLE_USE_THICK=true`.
+- `ORACLE_CLOUD_USER`: usuario Oracle del perfil cloud.
+- `ORACLE_CLOUD_PASSWORD`: password del usuario Oracle cloud.
+- `ORACLE_CLOUD_CONNECT_STRING`: alias TNS o connect string del perfil cloud, por ejemplo `oracle23ai_low`.
+
+Notas utiles:
+
+- Si `ORACLE_DB_PROFILE=local`, la app trabaja contra Oracle local al iniciar.
+- Si `ORACLE_DB_PROFILE=cloud`, la app intenta conectarse al perfil Oracle ADB al iniciar.
+- El selector de conexion de la interfaz puede cambiar entre `local` y `cloud` sin reiniciar la app.
+- En este proyecto, `ORACLE_USE_THICK=true` es la configuracion recomendada porque el perfil cloud usa wallet/TNS.
+
 ## Configuracion en produccion
 
 En produccion se usa el mismo modelo de configuracion, pero normalmente no se despliega un archivo `.env`. Las variables se definen en el entorno del servidor, contenedor o plataforma donde corra Node.js.
