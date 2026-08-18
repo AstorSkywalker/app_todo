@@ -19,6 +19,8 @@ sqlplus app_todo/TU_PASSWORD_APP@//localhost:1521/freepdb1 @01-crea-tablas.sql
 sqlplus app_todo/TU_PASSWORD_APP@//localhost:1521/freepdb1 @02-paquete-todos-crud.sql
 ```
 
+El script `00-crea-usuario-app-todo.sql` pide la password de `app_todo` al ejecutarse.
+
 ## Configuracion local
 
 La app carga la configuracion desde `.env` al iniciar. Ese archivo es para desarrollo local y no debe subirse al repositorio.
