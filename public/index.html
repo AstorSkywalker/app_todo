@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TODOs</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Oracle CRUD</p>
+            <h1>TODOs</h1>
+          </div>
+          <div class="connection-tools">
+            <label class="profile-select-label">
+              Conexion
+              <select id="dbProfile">
+                <option value="local">Local</option>
+                <option value="cloud">Nube ADB</option>
+              </select>
+            </label>
+            <div class="status-pill" id="dbStatus">
+              <span class="dot"></span>
+              <span>Conectando</span>
+            </div>
+          </div>
+        </header>
+
+        <section class="control-band">
+          <div class="filters" aria-label="Filtros">
+            <label>
+              Estado
+              <select id="filterEstado">
+                <option value="">Todos</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="en_progreso">En progreso</option>
+                <option value="completada">Completada</option>
+                <option value="cancelada">Cancelada</option>
+              </select>
+            </label>
+            <label>
+              Prioridad
+              <select id="filterPrioridad">
+                <option value="">Todas</option>
+                <option value="alta">Alta</option>
+                <option value="media">Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </label>
+            <label>
+              Usuario
+              <input id="filterUsuario" type="number" min="1" placeholder="ID">
+            </label>
+            <label class="checkbox-label">
+              <input id="filterVencidas" type="checkbox">
+              Vencidas
+            </label>
+          </div>
+          <button class="primary-button" id="newTodoButton" type="button">Nueva tarea</button>
+        </section>
+
+        <section class="summary-grid" aria-label="Resumen">
+          <article>
+            <span id="countTotal">0</span>
+            <p>Total</p>
+          </article>
+          <article>
+            <span id="countOpen">0</span>
+            <p>Abiertas</p>
+          </article>
+          <article>
+            <span id="countDone">0</span>
+            <p>Completadas</p>
+          </article>
+          <article>
+            <span id="countOverdue">0</span>
+            <p>Vencidas</p>
+          </article>
+        </section>
+
+        <section class="todo-board" id="todoBoard" aria-live="polite"></section>
+      </section>
+
+      <aside class="editor-panel">
+        <div class="editor-header">
+          <p class="eyebrow" id="formMode">Nueva</p>
+          <h2 id="formTitle">Crear tarea</h2>
+        </div>
+
+        <form id="todoForm">
+          <input type="hidden" id="todoId">
+          <label>
+            Titulo
+            <input id="titulo" name="titulo" maxlength="200" required placeholder="Ej. Revisar avance del censo">
+          </label>
+          <label>
+            Descripcion
+            <textarea id="descripcion" name="descripcion" rows="5" placeholder="Notas, contexto o pasos siguientes"></textarea>
+          </label>
+          <div class="form-row">
+            <label>
+              Estado
+              <select id="estado" name="estado">
+                <option value="pendiente">Pendiente</option>
+                <option value="en_progreso">En progreso</option>
+                <option value="completada">Completada</option>
+                <option value="cancelada">Cancelada</option>
+              </select>
+            </label>
+            <label>
+              Prioridad
+              <select id="prioridad" name="prioridad">
+                <option value="alta">Alta</option>
+                <option value="media" selected>Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              Vence
+              <input id="fechaVencimiento" name="fechaVencimiento" type="datetime-local">
+            </label>
+            <label>
+              Usuario
+              <input id="usuarioId" name="usuarioId" type="number" min="1" placeholder="Opcional">
+            </label>
+          </div>
+          <div class="form-actions">
+            <button class="secondary-button" id="resetButton" type="button">Limpiar</button>
+            <button class="primary-button" type="submit">Guardar</button>
+          </div>
+        </form>
+      </aside>
+    </main>
+
+    <dialog class="confirm-dialog" id="deleteDialog">
+      <form class="confirm-dialog-card" id="deleteDialogForm" method="dialog">
+        <p class="eyebrow">Confirmar</p>
+        <h2>Eliminar tarea</h2>
+        <p id="deleteDialogMessage">Esta accion eliminara la tarea seleccionada.</p>
+        <div class="confirm-dialog-actions">
+          <button class="secondary-button" id="deleteDialogCancel" value="cancel" type="submit">Cancelar</button>
+          <button class="danger-button" id="deleteDialogConfirm" value="confirm" type="submit">Eliminar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
