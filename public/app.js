@@ -28,6 +28,7 @@ const els = {
   countOpen: document.querySelector("#countOpen"),
   countDone: document.querySelector("#countDone"),
   countOverdue: document.querySelector("#countOverdue"),
+  logoutButton: document.querySelector("#logoutButton"),
   toast: document.querySelector("#toast"),
   deleteDialog: document.querySelector("#deleteDialog"),
   deleteDialogForm: document.querySelector("#deleteDialogForm"),
@@ -45,6 +46,25 @@ const labels = {
   baja: "Baja"
 };
 
+function accessToken() {
+  return sessionStorage.getItem("accessToken");
+}
+
+function saveAuthSession(payload) {
+  sessionStorage.setItem("accessToken", payload.accessToken);
+  sessionStorage.setItem("authUser", JSON.stringify(payload.user));
+}
+
+function clearAuthSession() {
+  sessionStorage.removeItem("accessToken");
+  sessionStorage.removeItem("authUser");
+}
+
+function redirectToLogin() {
+  clearAuthSession();
+  window.location.href = "/login.html";
+}
+
 function showToast(message) {
   els.toast.textContent = message;
   els.toast.classList.add("show");
@@ -53,10 +73,23 @@ function showToast(message) {
 }
 
 async function api(path, options = {}) {
+  const token = accessToken();
   const response = await fetch(path, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    },
     ...options
   });
+
+  if (response.status === 401 && !path.startsWith("/api/auth/")) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) return api(path, options);
+    redirectToLogin();
+    return null;
+  }
 
   if (!response.ok) {
     let message = "No se pudo completar la accion.";
@@ -71,6 +104,31 @@ async function api(path, options = {}) {
 
   if (response.status === 204) return null;
   return response.json();
+}
+
+async function refreshAccessToken() {
+  const response = await fetch("/api/auth/refresh", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({})
+  });
+
+  if (!response.ok) return false;
+
+  const payload = await response.json();
+  saveAuthSession(payload);
+  return true;
+}
+
+async function logout() {
+  await fetch("/api/auth/logout", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({})
+  }).catch(() => {});
+  redirectToLogin();
 }
 
 function formatDate(value) {
@@ -187,7 +245,9 @@ function normalizedUsuarioFilter() {
 
 async function loadTodos() {
   const query = queryString();
-  state.todos = await api(`/api/todos${query ? `?${query}` : ""}`);
+  const todos = await api(`/api/todos${query ? `?${query}` : ""}`);
+  if (!todos) return;
+  state.todos = todos;
   renderTodos();
 }
 
@@ -374,6 +434,7 @@ async function init() {
   });
   els.resetButton.addEventListener("click", resetForm);
   els.newTodoButton.addEventListener("click", resetForm);
+  els.logoutButton.addEventListener("click", logout);
   els.board.addEventListener("click", handleBoardClick);
   els.deleteDialog.addEventListener("cancel", () => {
     state.pendingDeleteId = null;

@@ -1,0 +1,27 @@
+PLAN A
+------
+1. BD  ----> free OCI 						        $0
+   VPS ----> Linux hostinger						$ 10
+
+PLAN B
+------
+2.  ---- Virtual Machine, instalar Oracle a pie. $ 60  = L 1,620
+		   ---- Ya no ocuparía VPS, porque es ella misma
+
+
+
+vscode
+git + github
+oracle always free ADB 
+html + css + javascript + React
+SQLcl
+SQL Developer Extension para vscode
+Live Server
+Vite
+Wallet de ADB
+npm
+nvm
+node.js (incluye oracledb)
+dotenv
+express
+jwt

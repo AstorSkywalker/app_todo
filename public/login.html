@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Iniciar sesion | TODOs</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-showcase" aria-label="Resumen de la aplicacion">
+        <div class="brand-mark">T</div>
+        <div>
+          <p class="eyebrow">Oracle CRUD</p>
+          <h1>TODOs</h1>
+          <p class="login-copy">
+            Organiza tareas, prioridades y vencimientos en un espacio limpio para equipos que necesitan avanzar sin perder contexto.
+          </p>
+        </div>
+        <div class="login-preview" aria-hidden="true">
+          <div class="preview-row">
+            <span></span>
+            <strong>Alta</strong>
+          </div>
+          <div class="preview-line wide"></div>
+          <div class="preview-line"></div>
+          <div class="preview-meta">
+            <span>Pendiente</span>
+            <span>Hoy</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="login-panel" aria-label="Formulario de inicio de sesion">
+        <div class="login-card">
+          <div class="login-header">
+            <p class="eyebrow">Bienvenido</p>
+            <h2>Iniciar sesion</h2>
+            <p>Ingresa tus credenciales para entrar al panel de tareas.</p>
+          </div>
+
+          <form class="login-form" id="loginForm" action="/api/auth/login" method="post">
+            <label>
+              Correo electronico
+              <input id="loginEmail" type="email" name="email" autocomplete="email" placeholder="nombre@empresa.com" required>
+            </label>
+            <label>
+              Contrasena
+              <input id="loginPassword" type="password" name="password" autocomplete="current-password" placeholder="Tu contrasena" required>
+            </label>
+            <div class="login-options">
+              <label class="checkbox-label login-remember">
+                <input type="checkbox" name="remember">
+                Recordarme
+              </label>
+              <a href="#">Olvide mi contrasena</a>
+            </div>
+            <button class="primary-button login-submit" type="submit">Entrar</button>
+            <p class="login-alert" id="loginAlert" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+    </main>
+    <script src="/login.js"></script>
+  </body>
+</html>

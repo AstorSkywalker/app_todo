@@ -2,6 +2,8 @@
 
 Aplicacion local con Node.js, HTML, CSS y JavaScript para administrar la tabla `TODOS` mediante el paquete PL/SQL `pkg_todos_crud`.
 
+La logica reutilizable de autenticacion y autorizacion vive en [`auth.js`](auth.js). La guia de estudio esta en [`SEGURIDAD-JWT.md`](SEGURIDAD-JWT.md).
+
 ## Requisitos
 
 - Node.js 20 o superior
@@ -17,6 +19,7 @@ Ejecuta estos scripts en orden. El primero se conecta con tu usuario DBA `nnelso
 sqlplus nnelson/TU_PASSWORD_DBA@//localhost:1521/freepdb1 @00-crea-usuario-app-todo.sql
 sqlplus app_todo/TU_PASSWORD_APP@//localhost:1521/freepdb1 @01-crea-tablas.sql
 sqlplus app_todo/TU_PASSWORD_APP@//localhost:1521/freepdb1 @02-paquete-todos-crud.sql
+sqlplus app_todo/TU_PASSWORD_APP@//localhost:1521/freepdb1 @04-auth-jwt-refresh.sql
 ```
 
 El script `00-crea-usuario-app-todo.sql` pide la password de `app_todo` al ejecutarse.
@@ -53,6 +56,10 @@ Tambien puedes copiar `.env.example` como base. Los valores de `.env` se cargan 
 - `ORACLE_CLOUD_USER`: usuario Oracle del perfil cloud.
 - `ORACLE_CLOUD_PASSWORD`: password del usuario Oracle cloud.
 - `ORACLE_CLOUD_CONNECT_STRING`: alias TNS o connect string del perfil cloud, por ejemplo `oracle23ai_low`.
+- `JWT_ACCESS_SECRET`: secreto para firmar access tokens JWT de corta duracion.
+- `JWT_REFRESH_SECRET`: secreto separado para firmar refresh tokens de larga duracion.
+- `JWT_ACCESS_EXPIRES_IN_SECONDS`: duracion del access token. Por defecto usaremos 15 minutos.
+- `JWT_REFRESH_EXPIRES_IN_DAYS`: duracion del refresh token. Por defecto usaremos 7 dias.
 
 Notas utiles:
 
@@ -167,16 +174,30 @@ Stop-Process -Id (Get-NetTCPConnection -LocalPort 3000 -State Listen).OwningProc
 
 ## API
 
-La API expone endpoints bajo `/api/todos` y utiliza el paquete `pkg_todos_crud`.
+La API expone endpoints bajo `/api/todos` y utiliza el paquete `pkg_todos_crud`. Las rutas de tareas requieren un access token JWT.
 
 Endpoints principales:
 
 - `GET /api/health`
 - `GET /api/db/profile`
 - `PUT /api/db/profile`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
 - `GET /api/todos`
 - `GET /api/todos/:id`
 - `POST /api/todos`
 - `PUT /api/todos/:id`
 - `PATCH /api/todos/:id/estado`
 - `DELETE /api/todos/:id`
+
+## Flujo JWT + refresh token
+
+1. `POST /api/auth/login` valida email y contrasenia.
+2. Si las credenciales son correctas, el servidor devuelve un access token JWT de corta duracion.
+3. El servidor tambien crea un refresh token de mayor duracion y lo manda en una cookie `HttpOnly`.
+4. El frontend guarda el access token en `sessionStorage` y lo envia en cada request como `Authorization: Bearer TOKEN`.
+5. Si el access token expira, el frontend llama a `POST /api/auth/refresh`; el servidor valida la cookie, rota el refresh token y devuelve un access token nuevo.
+6. `POST /api/auth/logout` revoca el refresh token actual y limpia la cookie.

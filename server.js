@@ -5,6 +5,23 @@ const path = require("path");
 
 loadEnvFile(path.join(__dirname, ".env"));
 
+const {
+  authConfig,
+  createAccessToken,
+  createRefreshSession,
+  createUserFromRow,
+  clearRefreshCookie,
+  ensureTodoOwner,
+  findUserByEmail,
+  hashPassword,
+  hashRefreshToken,
+  readCookie,
+  refreshCookie,
+  requireAuth,
+  rotateRefreshSession,
+  verifyPassword
+} = require("./auth");
+
 const app = express();
 const port = Number(process.env.PORT || 3000);
 
@@ -206,7 +223,7 @@ app.get("/api/db/profile", (req, res) => {
   });
 });
 
-app.put("/api/db/profile", async (req, res, next) => {
+app.put("/api/db/profile", requireAuth, async (req, res, next) => {
   try {
     const requestedProfile = req.body.profile;
 
@@ -226,7 +243,158 @@ app.put("/api/db/profile", async (req, res, next) => {
   }
 });
 
-app.get("/api/todos", async (req, res, next) => {
+app.post("/api/auth/register", async (req, res, next) => {
+  try {
+    const nombre = String(req.body.nombre || "").trim();
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const password = String(req.body.password || "");
+
+    if (!nombre || !email || !password) {
+      return res.status(400).json({ error: "Nombre, email y contrasenia son obligatorios." });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: "La contrasenia debe tener al menos 8 caracteres." });
+    }
+
+    const user = await withConnection(async (connection) => {
+      const existingUser = await findUserByEmail(connection, email);
+      if (existingUser) {
+        const error = new Error("Ya existe un usuario con ese email.");
+        error.status = 409;
+        throw error;
+      }
+
+      const passwordHash = await hashPassword(password);
+      const result = await connection.execute(
+        `INSERT INTO usuarios (nombre, email, password_hash)
+         VALUES (:nombre, :email, :password_hash)
+         RETURNING id INTO :id`,
+        {
+          nombre,
+          email,
+          password_hash: passwordHash,
+          id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
+        }
+      );
+      await connection.commit();
+
+      return {
+        id: result.outBinds.id[0],
+        nombre,
+        email
+      };
+    });
+
+    res.status(201).json({ user });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/auth/login", async (req, res, next) => {
+  try {
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const password = String(req.body.password || "");
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email y contrasenia son obligatorios." });
+    }
+
+    const session = await withConnection(async (connection) => {
+      const row = await findUserByEmail(connection, email);
+      const validPassword = row ? await verifyPassword(password, row.PASSWORD_HASH) : false;
+
+      if (!row || row.ACTIVO !== 1 || !validPassword) {
+        const error = new Error("Credenciales invalidas.");
+        error.status = 401;
+        throw error;
+      }
+
+      const user = createUserFromRow(row);
+      const refresh = await createRefreshSession(connection, user, req);
+      await connection.commit();
+
+      return {
+        user,
+        refresh,
+        accessToken: createAccessToken(user)
+      };
+    });
+
+    res.setHeader("Set-Cookie", refreshCookie(session.refresh.token, session.refresh.expiresAt));
+    res.json({
+      user: session.user,
+      accessToken: session.accessToken,
+      expiresInSeconds: authConfig.accessExpiresInSeconds
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/auth/refresh", async (req, res, next) => {
+  try {
+    const refreshToken = readCookie(req, "refreshToken") || req.body?.refreshToken;
+    if (!refreshToken) {
+      return res.status(401).json({ error: "Refresh token requerido." });
+    }
+
+    const session = await withConnection(async (connection) => {
+      const rotatedSession = await rotateRefreshSession(connection, refreshToken, req);
+      if (!rotatedSession) {
+        const error = new Error("Refresh token invalido o expirado.");
+        error.status = 401;
+        throw error;
+      }
+
+      await connection.commit();
+      return {
+        ...rotatedSession,
+        accessToken: createAccessToken(rotatedSession.user)
+      };
+    });
+
+    res.setHeader("Set-Cookie", refreshCookie(session.refresh.token, session.refresh.expiresAt));
+    res.json({
+      user: session.user,
+      accessToken: session.accessToken,
+      expiresInSeconds: authConfig.accessExpiresInSeconds
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/auth/logout", async (req, res, next) => {
+  try {
+    const refreshToken = readCookie(req, "refreshToken") || req.body?.refreshToken;
+
+    if (refreshToken) {
+      const tokenHash = hashRefreshToken(refreshToken);
+      await withConnection(async (connection) => {
+        await connection.execute(
+          `UPDATE refresh_tokens
+           SET revoked_at = COALESCE(revoked_at, SYSTIMESTAMP)
+           WHERE token_hash = :token_hash`,
+          { token_hash: tokenHash }
+        );
+        await connection.commit();
+      });
+    }
+
+    res.setHeader("Set-Cookie", clearRefreshCookie());
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/auth/me", requireAuth, (req, res) => {
+  res.json({ user: req.user });
+});
+
+app.get("/api/todos", requireAuth, async (req, res, next) => {
   try {
     const rows = await withConnection(async (connection) => {
       const result = await connection.execute(
@@ -242,7 +410,7 @@ app.get("/api/todos", async (req, res, next) => {
         {
           estado: req.query.estado || null,
           prioridad: req.query.prioridad || null,
-          usuario_id: toNullableNumber(req.query.usuarioId),
+          usuario_id: req.user.id,
           solo_vencidas: req.query.soloVencidas === "1" ? 1 : 0,
           resultado: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR }
         },
@@ -258,9 +426,10 @@ app.get("/api/todos", async (req, res, next) => {
   }
 });
 
-app.get("/api/todos/:id", async (req, res, next) => {
+app.get("/api/todos/:id", requireAuth, async (req, res, next) => {
   try {
     const rows = await withConnection(async (connection) => {
+      await ensureTodoOwner(connection, Number(req.params.id), req.user.id);
       const result = await connection.execute(
         `BEGIN
            pkg_todos_crud.obtener_todo(
@@ -285,7 +454,7 @@ app.get("/api/todos/:id", async (req, res, next) => {
   }
 });
 
-app.post("/api/todos", async (req, res, next) => {
+app.post("/api/todos", requireAuth, async (req, res, next) => {
   try {
     const body = req.body;
     const result = await withConnection(async (connection) => {
@@ -305,7 +474,7 @@ app.post("/api/todos", async (req, res, next) => {
           descripcion: body.descripcion || null,
           prioridad: body.prioridad || "media",
           fecha_vencimiento: toTimestamp(body.fechaVencimiento),
-          usuario_id: toNullableNumber(body.usuarioId),
+          usuario_id: req.user.id,
           id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
         }
       );
@@ -319,10 +488,11 @@ app.post("/api/todos", async (req, res, next) => {
   }
 });
 
-app.put("/api/todos/:id", async (req, res, next) => {
+app.put("/api/todos/:id", requireAuth, async (req, res, next) => {
   try {
     const body = req.body;
     await withConnection(async (connection) => {
+      await ensureTodoOwner(connection, Number(req.params.id), req.user.id);
       await connection.execute(
         `BEGIN
            pkg_todos_crud.actualizar_todo(
@@ -342,7 +512,7 @@ app.put("/api/todos/:id", async (req, res, next) => {
           estado: body.estado || "pendiente",
           prioridad: body.prioridad || "media",
           fecha_vencimiento: toTimestamp(body.fechaVencimiento),
-          usuario_id: toNullableNumber(body.usuarioId)
+          usuario_id: req.user.id
         }
       );
       await connection.commit();
@@ -354,9 +524,10 @@ app.put("/api/todos/:id", async (req, res, next) => {
   }
 });
 
-app.patch("/api/todos/:id/estado", async (req, res, next) => {
+app.patch("/api/todos/:id/estado", requireAuth, async (req, res, next) => {
   try {
     await withConnection(async (connection) => {
+      await ensureTodoOwner(connection, Number(req.params.id), req.user.id);
       await connection.execute(
         `BEGIN
            pkg_todos_crud.cambiar_estado(
@@ -378,9 +549,10 @@ app.patch("/api/todos/:id/estado", async (req, res, next) => {
   }
 });
 
-app.delete("/api/todos/:id", async (req, res, next) => {
+app.delete("/api/todos/:id", requireAuth, async (req, res, next) => {
   try {
     await withConnection(async (connection) => {
+      await ensureTodoOwner(connection, Number(req.params.id), req.user.id);
       await connection.execute(
         `BEGIN
            pkg_todos_crud.eliminar_todo(p_id => :id);
