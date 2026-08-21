@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reenviar confirmacion | TODOs</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-showcase" aria-label="Reenvio de confirmacion">
+        <div class="brand-mark">T</div>
+        <div>
+          <p class="eyebrow">Seguridad de cuenta</p>
+          <h1>TODOs</h1>
+          <p class="login-copy">Solicita un nuevo enlace para confirmar tu correo.</p>
+        </div>
+      </section>
+
+      <section class="login-panel" aria-label="Formulario de reenvio">
+        <div class="login-card">
+          <div class="login-header">
+            <p class="eyebrow">Verificacion</p>
+            <h2>Reenviar confirmacion</h2>
+            <p>Escribe el correo con el que creaste tu cuenta.</p>
+          </div>
+          <form class="login-form" id="resendVerificationForm" action="/api/auth/resend-verification" method="post">
+            <label>
+              Correo electronico
+              <input id="resendEmail" type="email" autocomplete="email" required>
+            </label>
+            <button class="primary-button login-submit" type="submit">Enviar nuevo enlace</button>
+            <p class="login-alert" id="resendAlert" role="status" aria-live="polite"></p>
+            <p class="login-secondary-link"><a href="/login.html">Volver al inicio de sesion</a></p>
+          </form>
+        </div>
+      </section>
+    </main>
+    <script src="/resend-verification.js"></script>
+  </body>
+</html>

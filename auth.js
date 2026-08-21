@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const oracledb = require("oracledb");
+const path = require("path");
 const { promisify } = require("util");
 
 const scryptAsync = promisify(crypto.scrypt);
@@ -104,6 +105,32 @@ function hashRefreshToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+function createPasswordResetToken() {
+  const token = crypto.randomBytes(32).toString("base64url");
+  return {
+    token,
+    tokenHash: hashPasswordResetToken(token),
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000)
+  };
+}
+
+function hashPasswordResetToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function createEmailVerificationToken() {
+  const token = crypto.randomBytes(32).toString("base64url");
+  return {
+    token,
+    tokenHash: hashEmailVerificationToken(token),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+  };
+}
+
+function hashEmailVerificationToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
 async function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString("base64url");
   const derivedKey = await scryptAsync(password, salt, 64);
@@ -163,16 +190,23 @@ function clearRefreshCookie() {
 }
 
 function requireAuth(req, res, next) {
+  const unauthorized = (message) => {
+    if (String(req.headers.accept || "").includes("text/html")) {
+      return res.status(401).sendFile(path.join(__dirname, "public", "401.html"));
+    }
+    return res.status(401).json({ error: message });
+  };
+
   const authHeader = req.headers.authorization || "";
   const [scheme, token] = authHeader.split(" ");
 
   if (scheme !== "Bearer" || !token) {
-    return res.status(401).json({ error: "Token de acceso requerido." });
+    return unauthorized("Token de acceso requerido.");
   }
 
   const payload = verifyJwt(token, authConfig.accessSecret);
   if (!payload || payload.tokenType !== "access") {
-    return res.status(401).json({ error: "Token de acceso invalido o expirado." });
+    return unauthorized("Token de acceso invalido o expirado.");
   }
 
   req.user = {
@@ -185,7 +219,7 @@ function requireAuth(req, res, next) {
 
 async function findUserByEmail(connection, email) {
   const result = await connection.execute(
-    `SELECT id, nombre, email, password_hash, activo
+    `SELECT id, nombre, email, password_hash, activo, email_verificado_at
      FROM usuarios
      WHERE LOWER(email) = LOWER(:email)`,
     { email },
@@ -281,11 +315,15 @@ module.exports = {
   createAccessToken,
   createRefreshSession,
   createRefreshToken,
+  createPasswordResetToken,
+  createEmailVerificationToken,
   createUserFromRow,
   clearRefreshCookie,
   ensureTodoOwner,
   findUserByEmail,
   hashPassword,
+  hashPasswordResetToken,
+  hashEmailVerificationToken,
   hashRefreshToken,
   readCookie,
   refreshCookie,

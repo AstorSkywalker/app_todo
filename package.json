@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "express": "^5.1.0",
+    "nodemailer": "^9.0.5",
     "oracledb": "^6.9.0"
   },
   "engines": {

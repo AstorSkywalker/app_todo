@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Confirmar correo | TODOs</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-showcase" aria-label="Confirmacion de correo">
+        <div class="brand-mark">T</div>
+        <div>
+          <p class="eyebrow">Seguridad de cuenta</p>
+          <h1>TODOs</h1>
+          <p class="login-copy">Confirma tu correo para activar el acceso a tu cuenta.</p>
+        </div>
+      </section>
+
+      <section class="login-panel" aria-label="Resultado de confirmacion">
+        <div class="login-card">
+          <div class="login-header">
+            <p class="eyebrow">Verificacion</p>
+            <h2 id="verifyTitle">Confirmando correo...</h2>
+            <p id="verifyMessage">Estamos validando tu enlace.</p>
+          </div>
+          <p class="login-alert" id="verifyAlert" role="status" aria-live="polite"></p>
+          <a class="primary-button login-submit" href="/login.html">Ir al inicio de sesion</a>
+        </div>
+      </section>
+    </main>
+    <script src="/verify-email.js"></script>
+  </body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Crear cuenta | TODOs</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-showcase" aria-label="Crear cuenta">
+        <div class="brand-mark">T</div>
+        <div>
+          <p class="eyebrow">Oracle CRUD</p>
+          <h1>TODOs</h1>
+          <p class="login-copy">Crea tu cuenta para organizar tareas, prioridades y vencimientos.</p>
+        </div>
+      </section>
+
+      <section class="login-panel" aria-label="Formulario de registro">
+        <div class="login-card">
+          <div class="login-header">
+            <p class="eyebrow">Nuevo usuario</p>
+            <h2>Crear cuenta</h2>
+            <p>Completa tus datos para comenzar.</p>
+          </div>
+
+          <form class="login-form" id="registerForm" action="/api/auth/register" method="post">
+            <label>
+              Nombre
+              <input id="registerName" type="text" autocomplete="name" required>
+            </label>
+            <label>
+              Correo electronico
+              <input id="registerEmail" type="email" autocomplete="email" required>
+            </label>
+            <label>
+              Contrasena
+              <input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required>
+            </label>
+            <label>
+              Repite la contrasena
+              <input id="registerPasswordConfirmation" type="password" autocomplete="new-password" minlength="8" required>
+            </label>
+            <button class="primary-button login-submit" type="submit">Crear cuenta</button>
+            <p class="login-alert" id="registerAlert" role="status" aria-live="polite"></p>
+            <p class="login-secondary-link">Ya tienes cuenta? <a href="/login.html">Iniciar sesion</a></p>
+          </form>
+        </div>
+      </section>
+    </main>
+    <script src="/register.js"></script>
+  </body>
+</html>

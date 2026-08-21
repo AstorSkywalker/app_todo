@@ -116,6 +116,23 @@ h2 {
   gap: 12px;
 }
 
+.user-identity {
+  display: grid;
+  gap: 3px;
+  min-width: 190px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.user-identity strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .profile-select-label {
   min-width: 150px;
 }
@@ -609,7 +626,10 @@ form,
 }
 
 .login-submit {
+  display: block;
   width: 100%;
+  text-align: center;
+  text-decoration: none;
 }
 
 .login-alert {
@@ -630,6 +650,22 @@ form,
 .login-alert.info {
   background: #e7edf8;
   color: var(--blue);
+}
+
+.login-alert.success {
+  background: #e6f4ea;
+  color: #176b3a;
+}
+
+.login-secondary-link {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+.is-hidden {
+  display: none;
 }
 
 @media (max-width: 1060px) {

@@ -29,6 +29,7 @@ const els = {
   countDone: document.querySelector("#countDone"),
   countOverdue: document.querySelector("#countOverdue"),
   logoutButton: document.querySelector("#logoutButton"),
+  currentUser: document.querySelector("#currentUser"),
   toast: document.querySelector("#toast"),
   deleteDialog: document.querySelector("#deleteDialog"),
   deleteDialogForm: document.querySelector("#deleteDialogForm"),
@@ -119,6 +120,36 @@ async function refreshAccessToken() {
   const payload = await response.json();
   saveAuthSession(payload);
   return true;
+}
+
+async function ensureAuthenticated() {
+  const token = accessToken();
+  const response = await fetch("/api/auth/me", {
+    credentials: "same-origin",
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+
+  if (response.ok) {
+    const payload = await response.json();
+    sessionStorage.setItem("authUser", JSON.stringify(payload.user));
+    return true;
+  }
+  if (await refreshAccessToken()) return true;
+
+  redirectToLogin();
+  return false;
+}
+
+function renderCurrentUser() {
+  const user = JSON.parse(sessionStorage.getItem("authUser") || "null");
+  if (!user || !els.currentUser) return;
+
+  els.currentUser.innerHTML = "";
+  const label = document.createElement("span");
+  label.textContent = "Usuario";
+  const name = document.createElement("strong");
+  name.textContent = `${user.nombre} (${user.email})`;
+  els.currentUser.append(label, name);
 }
 
 async function logout() {
@@ -429,6 +460,9 @@ async function switchProfile() {
 }
 
 async function init() {
+  if (!(await ensureAuthenticated())) return;
+  renderCurrentUser();
+
   els.form.addEventListener("submit", (event) => {
     saveTodo(event).catch((error) => showToast(error.message));
   });

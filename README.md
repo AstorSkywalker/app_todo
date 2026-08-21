@@ -20,6 +20,8 @@ sqlplus nnelson/TU_PASSWORD_DBA@//localhost:1521/freepdb1 @00-crea-usuario-app-t
 sqlplus app_todo/TU_PASSWORD_APP@//localhost:1521/freepdb1 @01-crea-tablas.sql
 sqlplus app_todo/TU_PASSWORD_APP@//localhost:1521/freepdb1 @02-paquete-todos-crud.sql
 sqlplus app_todo/TU_PASSWORD_APP@//localhost:1521/freepdb1 @04-auth-jwt-refresh.sql
+sqlplus app_todo/TU_PASSWORD_APP@//localhost:1521/freepdb1 @05-password-reset.sql
+sqlplus app_todo/TU_PASSWORD_APP@//localhost:1521/freepdb1 @06-email-verification.sql
 ```
 
 El script `00-crea-usuario-app-todo.sql` pide la password de `app_todo` al ejecutarse.
@@ -60,6 +62,10 @@ Tambien puedes copiar `.env.example` como base. Los valores de `.env` se cargan 
 - `JWT_REFRESH_SECRET`: secreto separado para firmar refresh tokens de larga duracion.
 - `JWT_ACCESS_EXPIRES_IN_SECONDS`: duracion del access token. Por defecto usaremos 15 minutos.
 - `JWT_REFRESH_EXPIRES_IN_DAYS`: duracion del refresh token. Por defecto usaremos 7 dias.
+- `APP_BASE_URL`: URL que se incluye en los enlaces de recuperacion.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`: configuracion del servidor SMTP.
+- `SMTP_USER`, `SMTP_PASSWORD`: credenciales SMTP. Para Gmail usa una app password.
+- `MAIL_FROM`: correo que aparece como remitente.
 
 Notas utiles:
 
@@ -182,7 +188,11 @@ Endpoints principales:
 - `GET /api/db/profile`
 - `PUT /api/db/profile`
 - `POST /api/auth/register`
+- `GET /api/auth/verify-email`
+- `POST /api/auth/resend-verification`
 - `POST /api/auth/login`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
 - `POST /api/auth/refresh`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
@@ -201,3 +211,16 @@ Endpoints principales:
 4. El frontend guarda el access token en `sessionStorage` y lo envia en cada request como `Authorization: Bearer TOKEN`.
 5. Si el access token expira, el frontend llama a `POST /api/auth/refresh`; el servidor valida la cookie, rota el refresh token y devuelve un access token nuevo.
 6. `POST /api/auth/logout` revoca el refresh token actual y limpia la cookie.
+
+## Verificacion de correo
+
+Las cuentas nuevas deben confirmar su correo antes de iniciar sesion.
+
+1. `POST /api/auth/register` crea la cuenta sin marcarla como verificada.
+2. La app genera un token temporal y envia un enlace por SMTP.
+3. El usuario abre el enlace de `verify-email.html`.
+4. `GET /api/auth/verify-email` valida el token y marca `email_verificado_at`.
+5. El login permite el acceso solamente despues de la confirmacion.
+6. Si el enlace expira, `POST /api/auth/resend-verification` genera uno nuevo.
+
+Los tokens se guardan como hash en `email_verification_tokens` y expiran despues de 24 horas.
